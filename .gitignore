@@ -1,0 +1,11 @@
+.env
+.venv/
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+AGENTS.md

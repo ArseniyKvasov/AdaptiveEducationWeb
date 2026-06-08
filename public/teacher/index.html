@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Адаптивное образование</title>
+    <link rel="icon" href="/favicon/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" href="/favicon/favicon-16x16.png" sizes="16x16">
+    <link rel="icon" type="image/png" href="/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
+    <link rel="manifest" href="/favicon/site.webmanifest">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+    <link rel="stylesheet" href="/teacher/styles.css">
+    <!-- Yandex.Metrika counter -->
+    <script type="text/javascript">
+        window.addEventListener('DOMContentLoaded', function () {
+            (function(m,e,t,r,i,k,a){
+                m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+            })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109545118', 'ym');
+
+            ym(109545118, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+        });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/109545118" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <script defer src="/teacher/script.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="page-layout">
+        <div class="main-column">
+            <div class="card">
+                <div class="panel-header">
+                    <span class="title">Загрузка файла</span>
+                </div>
+                <div class="sub">Перетащите файл или нажмите на область</div>
+
+                <div id="dropZone" class="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Выберите или перетащите файл</div>
+                    <div style="font-size: 12px; margin-top: 6px;">Видео и аудио - до 200 МБ</div>
+                    <input type="file" id="fileInput" accept="audio/*,video/*" style="display: none;"/>
+                </div>
+
+                <div id="uploadStatus" style="min-height: 48px;"></div>
+
+                <button id="generateBtn" class="btn" disabled>Обработать запись</button>
+
+                <div class="action-group">
+                    <button id="resetUploadBtn" class="action-outline" type="button">Загрузить другой файл</button>
+                    <button id="historyToggleBtn" class="action-outline history-trigger-mobile" type="button">История
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="title" style="margin-bottom: 12px;">Расшифровка и контент</div>
+
+                <div class="tabs-wrapper">
+                    <div class="tabs-row">
+                        <button class="tab-btn active" data-tab="transcript">📝 Транскрипт</button>
+                        <button class="tab-btn" data-tab="summary" id="summaryTabBtn" disabled style="opacity: 0.5;">
+                            <span class="tab-text">📖 Конспект</span>
+                            <span class="tab-loader" style="display: none;"></span>
+                        </button>
+                        <button class="tab-btn" data-tab="quiz" id="quizTabBtn" disabled style="opacity: 0.5;">
+                            <span class="tab-text">❓ Тест</span>
+                            <span class="tab-loader" style="display: none;"></span>
+                        </button>
+                        <button class="tab-btn" data-tab="practice" id="practiceTabBtn" hidden disabled style="opacity: 0.5;">
+                            <span class="tab-text">🧪 Практика</span>
+                            <span class="tab-loader" style="display: none;"></span>
+                        </button>
+                        <button class="tab-btn" data-tab="analytics" id="analyticsTabBtn" disabled style="opacity: 0.5;">
+                            <span class="tab-text">📊 Аналитика</span>
+                            <span class="tab-loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="panelTranscript" class="content-pane active-pane">
+                    <div id="transcriptContainer">
+                        <div class="status-message">Загрузите файл и нажмите «Обработать запись»</div>
+                    </div>
+                    <button id="transcriptJumpBtn" class="transcript-jump-btn" type="button" aria-label="Прокрутить вниз" hidden>↓</button>
+                </div>
+
+                <div id="panelSummary" class="content-pane">
+                    <div class="edit-control">
+                        <button id="editSummaryBtn" class="edit-btn">✏️ Редактировать конспект</button>
+                    </div>
+                    <div id="summaryContainer">
+                        <div class="status-message">Конспект появится после обработки</div>
+                    </div>
+                </div>
+
+                <div id="panelQuiz" class="content-pane">
+                    <div class="edit-control">
+                        <button id="editQuizBtn" class="edit-btn">✏️ Редактировать тест</button>
+                    </div>
+                    <div id="quizContainer">
+                        <div class="status-message">Тест появится после обработки</div>
+                    </div>
+                </div>
+
+                <div id="panelPractice" class="content-pane">
+                    <div id="practiceContainer">
+                        <div class="status-message">Практика появится после прохождения теста</div>
+                    </div>
+                </div>
+
+                <div id="panelAnalytics" class="content-pane">
+                    <div id="analyticsContainer">
+                        <div class="status-message">Аналитика появится после обработки</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="card history-sidebar" aria-label="История генераций">
+            <div class="history-header">
+                <div class="title">История</div>
+            </div>
+            <div id="historyList" class="history-list"></div>
+        </aside>
+    </div>
+</div>
+
+<div id="historyOverlay" class="history-overlay" hidden></div>
+<div id="historyDrawer" class="history-drawer" aria-hidden="true">
+    <div class="history-drawer-handle"></div>
+    <div class="history-drawer-header">
+        <div class="title">История</div>
+        <button id="closeHistoryBtn" class="drawer-close" type="button">Закрыть</button>
+    </div>
+    <div id="historyListMobile" class="history-list"></div>
+</div>
+
+<div id="questionTypeOverlay" class="question-type-overlay" hidden></div>
+<div id="questionTypeDrawer" class="question-type-drawer" aria-hidden="true">
+    <div class="question-type-drawer-handle"></div>
+    <div class="question-type-drawer-header">
+        <div class="title">Тип нового вопроса</div>
+        <button id="closeQuestionTypeBtn" class="drawer-close" type="button">Закрыть</button>
+    </div>
+    <div class="question-type-actions">
+        <button id="addMultipleChoiceBtn" class="question-type-btn" type="button">С выбором</button>
+        <button id="addOpenEndedBtn" class="question-type-btn" type="button">Открытый</button>
+    </div>
+</div>
+</body>
+</html>
