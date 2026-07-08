@@ -59,12 +59,21 @@ def _russian_question_type(value: Any) -> str:
     return _QUESTION_TYPE_TO_RUSSIAN.get(canonical, "")
 
 
+def _mask_key(key: str) -> str:
+    if not key:
+        return "<empty>"
+    if len(key) <= 8:
+        return f"len={len(key)}"
+    return f"len={len(key)} {key[:4]}...{key[-4:]}"
+
+
 class MLServiceClient:
     def __init__(self, api_key: str, base_url: str = "https://ml.fastclass.ru") -> None:
         self.api_key = api_key
         self.base_url = base_url.rstrip("/")
         self._unfinished_jobs: dict[str, str] = {}
         self._unfinished_jobs_lock = asyncio.Lock()
+        print(f"[ML client] constructed with base_url={self.base_url} api_key={_mask_key(api_key)}")
 
     def _headers(self, *, include_content_type: bool = True) -> dict[str, str]:
         if not self.api_key:
@@ -184,6 +193,8 @@ class MLServiceClient:
 
         if resp.status_code >= 400:
             print(f"DEBUG: ML POST {path} failed: status={resp.status_code}, payload={self._compact_preview(payload)}, response={data}")
+            if resp.status_code in (401, 403):
+                print(f"DEBUG: ML POST {path} auth failure with api_key={_mask_key(self.api_key)}, base_url={self.base_url}")
             if resp.status_code == 429:
                 message = self._http_user_message(429)
             else:
@@ -233,6 +244,8 @@ class MLServiceClient:
 
         if resp.status_code >= 400:
             print(f"DEBUG: ML POST (multipart) {path} failed: status={resp.status_code}, data={data}, response={payload}")
+            if resp.status_code in (401, 403):
+                print(f"DEBUG: ML POST (multipart) {path} auth failure with api_key={_mask_key(self.api_key)}, base_url={self.base_url}")
             if resp.status_code == 429:
                 message = self._http_user_message(429)
             else:
@@ -288,6 +301,8 @@ class MLServiceClient:
 
         if resp.status_code >= 400:
             print(f"DEBUG: ML GET task {job_id} failed: status={resp.status_code}, response={data}")
+            if resp.status_code in (401, 403):
+                print(f"DEBUG: ML GET task {job_id} auth failure with api_key={_mask_key(self.api_key)}, base_url={self.base_url}")
             if resp.status_code == 429:
                 message = self._http_user_message(429)
             else:

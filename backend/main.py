@@ -21,8 +21,9 @@ from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
 from .database import init_db, now_iso, get_generation
-from .ml_service import MLServiceClient
+from .ml_service import MLServiceClient, _mask_key
 ML_API_KEY = os.getenv("ML_API_KEY", "")
+ML_URL = os.getenv("ML_URL", "https://ml.fastclass.ru")
 
 # Configure logging
 logging.basicConfig(
@@ -30,6 +31,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Startup: ML_URL={ML_URL} ML_API_KEY={_mask_key(ML_API_KEY)}")
 
 # Lazy initialization of DB and resumption of tasks via Lifespan
 @asynccontextmanager
