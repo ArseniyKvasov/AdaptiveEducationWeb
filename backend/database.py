@@ -65,13 +65,22 @@ def now_iso() -> str:
 
 
 def ensure_guest_user(request: Request) -> str:
-    """Ensures guest user session and database record exist."""
-    user_id = request.session.get("user_id")
-    if user_id:
-        return user_id
+    """Ensures guest user session and database record exist.
 
-    user_id = f"guest_{uuid.uuid4().hex[:14]}"
+    The session cookie can outlive the database it was created against
+    (e.g. a stale cookie from a previous deployment pointing at a
+    different app.db), so a user_id found in the session is not trusted
+    blindly - it's verified to actually exist in the current database.
+    """
+    user_id = request.session.get("user_id")
     with get_db() as conn:
+        if user_id:
+            existing = conn.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone()
+            if existing:
+                return user_id
+            logger.warning(f"Session user_id {user_id} not found in current database; creating a fresh guest user.")
+
+        user_id = f"guest_{uuid.uuid4().hex[:14]}"
         user_cols = {row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()}
         if "role" in user_cols:
             conn.execute("INSERT INTO users (id, role, created_at) VALUES (?, ?, ?)", (user_id, "guest", now_iso()))
