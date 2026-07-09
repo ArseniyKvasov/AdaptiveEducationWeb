@@ -25,7 +25,7 @@ UPLOAD_DIR = DATA_DIR / "queued_uploads"
 def _get_db_path() -> Path:
     """Dynamically resolves the SQLite database file path, supporting test suite overrides."""
     import sys
-    for mod_name in ("adaptlearning.backend.main", "Web.backend.main", "backend.main", "main"):
+    for mod_name in ("AdaptiveEducationWeb.backend.main", "Web.backend.main", "backend.main", "main"):
         main_mod = sys.modules.get(mod_name)
         if main_mod and hasattr(main_mod, "DB_PATH"):
             return main_mod.DB_PATH

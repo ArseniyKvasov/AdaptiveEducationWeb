@@ -41,7 +41,7 @@ ML_URL = os.getenv("ML_URL", "https://ml.fastclass.ru")
 def get_ml_api_key() -> str:
     """Dynamically resolves the ML service API key, supporting test suite overrides."""
     import sys
-    for mod_name in ("adaptlearning.backend.main", "Web.backend.main", "backend.main", "main"):
+    for mod_name in ("AdaptiveEducationWeb.backend.main", "Web.backend.main", "backend.main", "main"):
         main_mod = sys.modules.get(mod_name)
         if main_mod and hasattr(main_mod, "ML_API_KEY"):
             return main_mod.ML_API_KEY

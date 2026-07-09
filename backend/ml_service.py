@@ -8,6 +8,8 @@ import httpx
 
 from .text_repair import repair_latex_text, repair_latex_value
 
+_FILE_PROCESSING_TIMEOUT_S = 24 * 60 * 60
+
 
 class MLServiceError(Exception):
     def __init__(self, message: str, user_message: str) -> None:
@@ -384,7 +386,7 @@ class MLServiceClient:
             timeout_s=600,
         )
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             transcript = data.get("transcript")
             if not isinstance(transcript, list) or not transcript:
@@ -598,7 +600,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/chunk-analyze", chunk_transcript, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             normalized = self._normalize_chunk_analysis_chunk(data)
             if not normalized or not normalized.get("key_points"):
@@ -622,7 +624,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/teacher-analysis-aggregate", payload, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             if not isinstance(data, dict) or not data:
                 raise MLServiceError(
@@ -659,7 +661,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/lesson-summary", payload, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             summary = data.get("summary")
             if not isinstance(summary, list) or not summary:
@@ -689,7 +691,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/practice-summary", payload, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             summary = data.get("summary")
             if not isinstance(summary, list) or not summary:
@@ -728,7 +730,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/quiz", payload, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             quiz = data.get("quiz")
             if not isinstance(quiz, list) or not quiz:
@@ -802,7 +804,7 @@ class MLServiceClient:
         task: dict[str, Any] = {}
         task = await self._submit_task("/grade-open-answers", payload, timeout_s=600)
         try:
-            task = await self._wait_for_task(task, timeout_s=3600)
+            task = await self._wait_for_task(task, timeout_s=_FILE_PROCESSING_TIMEOUT_S)
             data = self._task_result(task)
             scores = data.get("scores")
             if not isinstance(scores, list):

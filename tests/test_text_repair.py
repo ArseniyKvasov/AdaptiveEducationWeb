@@ -9,8 +9,8 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from adaptlearning.backend import main
-from adaptlearning.backend.text_repair import repair_latex_text, repair_latex_value
+from backend import main
+from backend.text_repair import repair_latex_text, repair_latex_value
 
 
 class LatexRepairHelperTests(unittest.TestCase):
