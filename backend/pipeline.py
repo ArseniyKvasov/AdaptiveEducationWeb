@@ -471,6 +471,29 @@ def log_summary_payload(summary_groups: list[dict[str, Any]], label: str) -> Non
         )
 
 
+def _chunk_analysis_debug_view(chunk: dict[str, Any], idx: int) -> str:
+    """Builds a compact diagnostic string for a chunk analysis payload."""
+    if not isinstance(chunk, dict):
+        return f"#{idx}: <non-dict>"
+    key_points = chunk.get("key_points")
+    key_points_count = len(key_points) if isinstance(key_points, list) else 0
+    preview_parts: list[str] = []
+    transcript = chunk.get("transcript")
+    if isinstance(transcript, list):
+        for item in transcript[:2]:
+            if not isinstance(item, dict):
+                continue
+            text = " ".join(str(item.get("text", "") or "").split())
+            if text:
+                preview_parts.append(text[:120])
+    preview = " | ".join(preview_parts)
+    return (
+        f"#{idx}: chunk_id={chunk.get('chunk_id')!r}, "
+        f"start_ms={chunk.get('start_ms')!r}, end_ms={chunk.get('end_ms')!r}, "
+        f"key_points={key_points_count}, preview={preview!r}"
+    )
+
+
 def log_final_summary(summary: list[dict[str, Any]], label: str) -> None:
     """Logs summaries of the finalized generated summaries."""
     logger.info(f"[summary] {label}: sections={len(summary) if isinstance(summary, list) else 0}")
@@ -688,6 +711,7 @@ async def build_summary_and_quiz(
         raw_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
         chunk_analyses = []
         failed_chunks = 0
+        rejected_chunks = 0
         for result in raw_results:
             if isinstance(result, Exception):
                 failed_chunks += 1
@@ -695,18 +719,39 @@ async def build_summary_and_quiz(
                 continue
             if isinstance(result, dict) and result:
                 chunk_analyses.append(result)
+                continue
+            rejected_chunks += 1
         if failed_chunks:
             logger.warning(f"Chunk analysis completed with failures: failed_chunks={failed_chunks}, total={len(summary_groups)}")
+        if rejected_chunks:
+            logger.warning(
+                "Chunk analysis returned unusable payloads: rejected_chunks=%s total=%s",
+                rejected_chunks,
+                len(summary_groups),
+            )
     else:
         chunk_analyses = [chunk for chunk in chunk_analyses if isinstance(chunk, dict) and chunk]
 
     mini_summaries = []
-    for chunk in chunk_analyses:
+    discarded_chunks = 0
+    for idx, chunk in enumerate(chunk_analyses, start=1):
         key_points_raw = chunk.get("key_points")
         if not isinstance(key_points_raw, list):
+            discarded_chunks += 1
+            logger.warning(
+                "[summary] %s: discarded chunk without key_points list: %s",
+                "build_summary_and_quiz",
+                _chunk_analysis_debug_view(chunk, idx),
+            )
             continue
         key_points = [str(point).strip() for point in key_points_raw if str(point).strip()]
         if not key_points:
+            discarded_chunks += 1
+            logger.warning(
+                "[summary] %s: discarded chunk with empty key_points: %s",
+                "build_summary_and_quiz",
+                _chunk_analysis_debug_view(chunk, idx),
+            )
             continue
         mini_summaries.append(
             {
@@ -718,7 +763,20 @@ async def build_summary_and_quiz(
                 "examples": [],
             }
         )
+    if discarded_chunks:
+        logger.warning(
+            "[summary] build_summary_and_quiz: discarded %s/%s chunk analyses before mini summaries",
+            discarded_chunks,
+            len(chunk_analyses),
+        )
     if not mini_summaries:
+        logger.error(
+            "[summary] build_summary_and_quiz: no usable mini summaries after chunk analyses: %s",
+            [
+                _chunk_analysis_debug_view(chunk, idx)
+                for idx, chunk in enumerate(chunk_analyses[:5], start=1)
+            ],
+        )
         raise MLServiceError(
             "Chunk analysis produced no usable mini summaries",
             "Не удалось составить конспект. Попробуйте повторить генерацию.",
@@ -798,23 +856,31 @@ async def build_teacher_analysis(
     log_summary_payload(analysis_source, "build_teacher_analysis")
     if chunk_analyses is None:
         analysis_tasks = [asyncio.create_task(ml_client.make_chunk_analyze(chunk)) for chunk in analysis_source]
-        raw_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
+        analysis_results = await asyncio.gather(*analysis_tasks, return_exceptions=True)
 
         chunk_analyses = []
         failed_chunks = 0
-        for result in raw_results:
+        rejected_chunks = 0
+        for result in analysis_results:
             if isinstance(result, Exception):
                 failed_chunks += 1
                 logger.error(f"Teacher analysis chunk failed: {result}")
                 continue
             if isinstance(result, dict) and result:
                 chunk_analyses.append(result)
+                continue
+            rejected_chunks += 1
     else:
         chunk_analyses = [chunk for chunk in chunk_analyses if isinstance(chunk, dict) and chunk]
         failed_chunks = 0
+        rejected_chunks = 0
+        analysis_results = list(chunk_analyses)
 
     if not chunk_analyses:
-        logger.error("Teacher analysis produced no usable chunk analyses")
+        logger.error(
+            "Teacher analysis produced no usable chunk analyses: %s",
+            [_chunk_analysis_debug_view(chunk, idx) for idx, chunk in enumerate(analysis_results[:5], start=1)],
+        )
         return {}
 
     speech_analysis_type = SPEECH_ANALYSIS_TYPE_MAIN
